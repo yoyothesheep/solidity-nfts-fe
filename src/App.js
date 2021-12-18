@@ -1,6 +1,8 @@
 import './styles/App.css';
 import twitterLogo from './assets/twitter-logo.svg';
 import React, {useEffect, useState} from "react";
+import { ethers } from "ethers";
+import GroupNFT from './utils/GroupNFT.json';
 
 // Constants
 const TWITTER_HANDLE = 'yoyothesheep';
@@ -29,10 +31,11 @@ const App = () => {
     // TODO - why do we need this whole section here? Can clean up.
     if (accounts.length !== 0) {
       const thisAccount = accounts[0];
+      console.log("Found an authorized account:", thisAccount);
       setCurrentAccount(thisAccount);
     }
     else {
-      console.log("TODO: no authorized accounts. Need to authorize");
+      console.log("TODO: checkIfWalletIsConnected: no authorized accounts. Need to authorize");
     }
   };
 
@@ -42,22 +45,59 @@ const App = () => {
       const { ethereum } = window;
 
       if (!ethereum) { 
-        alert("Install an Ethereum wallet plz");
+        alert("connectWallet: Install an Ethereum wallet plz");
         return;
       } 
       
-      const accounts = await ethereum.request({ method: 'eth_accounts' });
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 
       // If multiple accounts authorized, use first one
       setCurrentAccount(accounts[0]);
+      console.log("connectWallet: /n connected");
     } catch (error) {
-      console.log(error)
+      console.log("connectWallet: /n", error);
+    }
+  };
+
+  // Mint the NFT
+  const askContractToMint = async () => {
+
+    console.log("askContractToMint");
+
+    // Shouldn't this be globally declared on top? 
+    // TODO - update when deploy new contract
+    const CONTRACT_ADDRESS = "0xc6b67dA41FB3fEE450E931B90d8C30207c54FdaF";
+
+    try {
+      const { ethereum } = window;
+
+      if (ethereum) {
+        // get the Wallet that we'll use to sign the mint transaction
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+
+        // connect to our GroupNFT contract
+        const connectedContract = new ethers.Contract(CONTRACT_ADDRESS, GroupNFT.abi, signer);
+
+        console.log("going to pop open wallet to get approval to pay gas");
+        let nftTxn = await connectedContract.makeGroupNFTs();
+
+        console.log("mining.. wait..");
+        await nftTxn.wait();
+
+        console.log(`Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`);
+
+      } else {
+        console.log("askContractToMint: Ethereum object doesn't exist.");
+      }
+    } catch (error) {
+      console.log("askContractToMint: /n", error);
     }
   };
 
   // Render Methods
   const renderNotConnectedContainer = () => (
-    <button className="cta-button connect-wallet-button">
+    <button onClick={connectWallet} className="cta-button connect-wallet-button">
       Connect to Wallet
     </button>
   );
@@ -76,7 +116,7 @@ const App = () => {
           {currentAccount === "" ? (
             renderNotConnectedContainer()
           ) : (
-            <button onClick={null} className="cta-button connect-wallet-button">
+            <button onClick={askContractToMint} className="cta-button connect-wallet-button">
               Mint NFT
             </button>
           )}
