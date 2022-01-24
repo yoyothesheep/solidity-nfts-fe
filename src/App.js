@@ -92,6 +92,7 @@ const App = () => {
         connectedContract.on("NewGroupNFTMinted", (from, tokenId) => {
           console.log(from, tokenId.toNumber());
           alert(`Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`)
+          // https://rinkeby.rarible.com/token/0x1f1aC06659cB831a7a476F10d5a1Dcbb8a5d86C4:1?tab=details
         });
 
         console.log("Setup event listener!")
